@@ -2,3 +2,4 @@ langgraph
 langsmith
 langchain[openai]
 ipython
+langchain-tavily
