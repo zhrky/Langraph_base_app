@@ -1,15 +1,6 @@
-"""
-LangGraph Agent Demo Uygulaması
-
-Kullanım:
-    python main.py              # FastAPI backend başlat
-    python main.py --test       # Memory testlerini çalıştır
-"""
-
 import sys
 import os
 import uvicorn
-from src.memory_test import test_memory_example
 
 def start_api_server():
     """FastAPI sunucusunu başlat"""
@@ -33,16 +24,7 @@ def start_api_server():
 def main():
     """Ana uygulama giriş noktası"""
     if len(sys.argv) > 1:
-        arg = sys.argv[1]
-        
-        if arg == "--test":
-            print("🧪 Memory testleri çalıştırılıyor...")
-            test_memory_example()
-        else:
-            print(f"❌ Bilinmeyen parametre: {arg}")
-            print("\nKullanılabilir parametreler:")
-            print("  --test    : Memory testlerini çalıştır")
-            
+        arg = sys.argv[1] 
     else:
         print("🌐 API Backend modu")
         start_api_server()

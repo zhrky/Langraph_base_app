@@ -6,6 +6,7 @@ from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 from .agent import LangGraphAgent
 import json
+import re
 
 class State(TypedDict):
     """Graph state tanımı"""
@@ -51,6 +52,62 @@ class WorkflowManager:
         # Memory ile compile et
         return graph_builder.compile(checkpointer=self.memory)
     
+    def _format_search_results(self, search_data):
+        """Arama sonuçlarını güzel bir şekilde formatla"""
+        if not isinstance(search_data, list) or len(search_data) == 0:
+            return None
+            
+        formatted_response = {
+            "type": "search_results",
+            "title": "🔍 Arama Sonuçları",
+            "results": []
+        }
+        
+        for i, result in enumerate(search_data[:3], 1):
+            title = result.get('title', 'Başlık yok')
+            content = result.get('content', 'İçerik yok')
+            url = result.get('url', '')
+            
+            # İçeriği temizle ve kısalt
+            content = re.sub(r'<[^>]+>', '', content)  # HTML taglerini temizle
+            content = content.strip()
+            if len(content) > 150:
+                content = content[:150] + "..."
+            
+            formatted_response["results"].append({
+                "number": i,
+                "title": title,
+                "content": content,
+                "url": url
+            })
+        
+        return formatted_response
+    
+    def _format_content(self, content):
+        """İçeriği güzel formatta yapılandır"""
+        # Başlıkları düzenle
+        content = re.sub(r'^# (.+)$', r'<h1>$1</h1>', content, flags=re.MULTILINE)
+        content = re.sub(r'^## (.+)$', r'<h2>$1</h2>', content, flags=re.MULTILINE)
+        content = re.sub(r'^### (.+)$', r'<h3>$1</h3>', content, flags=re.MULTILINE)
+        
+        # Liste elemanlarını düzenle
+        content = re.sub(r'^- (.+)$', r'<li>$1</li>', content, flags=re.MULTILINE)
+        content = re.sub(r'(<li>.*</li>)', r'<ul>\1</ul>', content, flags=re.DOTALL)
+        
+        # Numaralı listeler
+        content = re.sub(r'^(\d+)\. (.+)$', r'<li>$2</li>', content, flags=re.MULTILINE)
+        
+        # Bold text
+        content = re.sub(r'\*\*(.*?)\*\*', r'<strong>$1</strong>', content)
+        
+        # Links
+        content = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', r'<a href="$2" target="_blank">$1</a>', content)
+        
+        # Code blocks
+        content = re.sub(r'`([^`]+)`', r'<code>$1</code>', content)
+        
+        return content
+
     def stream_updates(self, user_input: str):
         """Graph güncellemelerini stream et - Memory destekli"""
         events = self.graph.stream(
@@ -59,6 +116,8 @@ class WorkflowManager:
             stream_mode="values",
         )
         
+        collected_content = []
+        
         for event in events:
             if "messages" in event and len(event["messages"]) > 0:
                 last_message = event["messages"][-1]
@@ -66,26 +125,21 @@ class WorkflowManager:
                 # AI mesajlarını yield et
                 if hasattr(last_message, 'content') and hasattr(last_message, 'type'):
                     if last_message.type == "ai":
-                        yield last_message.content
+                        formatted_content = self._format_content(last_message.content)
+                        yield formatted_content
                 elif hasattr(last_message, 'content'):
-                    # Tool mesajlarını da işle
+                    # Tool mesajlarını işle
                     if hasattr(last_message, 'name'):  # Tool message
                         try:
-                            # Tool response'unu parse et
                             tool_data = json.loads(last_message.content)
-                            if isinstance(tool_data, list) and len(tool_data) > 0:
-                                # Tavily search results
-                                formatted_results = "🔍 **Arama Sonuçları:**\n\n"
-                                for i, result in enumerate(tool_data[:3], 1):
-                                    title = result.get('title', 'Başlık yok')
-                                    content = result.get('content', 'İçerik yok')[:200] + "..."
-                                    url = result.get('url', '')
-                                    formatted_results += f"**{i}. {title}**\n{content}\n🔗 [Kaynak]({url})\n\n"
-                                yield formatted_results
+                            search_results = self._format_search_results(tool_data)
+                            if search_results:
+                                yield json.dumps(search_results)
                         except (json.JSONDecodeError, AttributeError):
                             pass
                     elif last_message.content != user_input:
-                        yield last_message.content
+                        formatted_content = self._format_content(last_message.content)
+                        yield formatted_content
     
     def set_thread_id(self, thread_id: str):
         """Thread ID'yi değiştir (farklı konuşma oturumları için)"""
