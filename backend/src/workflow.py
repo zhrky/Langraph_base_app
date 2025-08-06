@@ -5,6 +5,7 @@ from langgraph.graph import StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 from .agent import LangGraphAgent
+import json
 
 class State(TypedDict):
     """Graph state tanımı"""
@@ -61,13 +62,29 @@ class WorkflowManager:
         for event in events:
             if "messages" in event and len(event["messages"]) > 0:
                 last_message = event["messages"][-1]
-                # Sadece AI mesajlarını yield et, user mesajlarını değil
+                
+                # AI mesajlarını yield et
                 if hasattr(last_message, 'content') and hasattr(last_message, 'type'):
-                    if last_message.type != "human":  # Human mesajları filtrele
+                    if last_message.type == "ai":
                         yield last_message.content
-                elif hasattr(last_message, 'content') and not hasattr(last_message, 'type'):
-                    # Type attribute yoksa, içeriğe bakarak AI mesajı olup olmadığını kontrol et
-                    if last_message.content != user_input:  # User input'u filtrele
+                elif hasattr(last_message, 'content'):
+                    # Tool mesajlarını da işle
+                    if hasattr(last_message, 'name'):  # Tool message
+                        try:
+                            # Tool response'unu parse et
+                            tool_data = json.loads(last_message.content)
+                            if isinstance(tool_data, list) and len(tool_data) > 0:
+                                # Tavily search results
+                                formatted_results = "🔍 **Arama Sonuçları:**\n\n"
+                                for i, result in enumerate(tool_data[:3], 1):
+                                    title = result.get('title', 'Başlık yok')
+                                    content = result.get('content', 'İçerik yok')[:200] + "..."
+                                    url = result.get('url', '')
+                                    formatted_results += f"**{i}. {title}**\n{content}\n🔗 [Kaynak]({url})\n\n"
+                                yield formatted_results
+                        except (json.JSONDecodeError, AttributeError):
+                            pass
+                    elif last_message.content != user_input:
                         yield last_message.content
     
     def set_thread_id(self, thread_id: str):

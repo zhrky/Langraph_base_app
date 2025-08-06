@@ -3,3 +3,6 @@ langsmith
 langchain[openai]
 ipython
 langchain-tavily
+fastapi
+uvicorn
+python-multipart
