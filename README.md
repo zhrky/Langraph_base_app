@@ -1,6 +1,6 @@
 # LangGraph AI - Intelligent Assistant
 
-![Uploading image.png…]()
+<img width="1308" height="952" alt="image" src="https://github.com/user-attachments/assets/930d11fa-ebf3-45ec-9cb4-504848f03e11" />
 
 
 ## 📋 Proje Hakkında
