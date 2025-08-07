@@ -1,8 +1,35 @@
-langgraph
-langsmith
-langchain[openai]
-ipython
-langchain-tavily
-fastapi
-uvicorn
-python-multipart
+# FastAPI ve Web Server
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+
+# LangGraph ve LangChain
+langgraph==0.2.45
+langchain==0.3.9
+langchain-core==0.3.21
+langchain-openai==0.2.13
+
+# Azure OpenAI
+langchain-community==0.3.11
+
+# Web arama
+langchain-tavily==0.2.0
+
+# Genel yardımcı kütüphaneler  
+python-dotenv==1.0.0
+typing-extensions==4.12.2
+
+# CORS ve HTTP
+httpx==0.25.2
+requests==2.31.0
+
+# JSON işleme (built-in olmasına rağmen uyumluluk için)
+# json - Python built-in
+
+# Regex (built-in)
+# re - Python built-in
+
+# UUID (built-in)
+# uuid - Python built-in
+
+# System libraries (built-in)
+# sys, os - Python built-in
