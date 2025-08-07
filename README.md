@@ -1,6 +1,7 @@
 # LangGraph AI - Intelligent Assistant
 
-![LangGraph AI Interface](./docs/ui-screenshot.png)
+![Uploading image.png…]()
+
 
 ## 📋 Proje Hakkında
 
